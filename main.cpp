@@ -2,6 +2,8 @@
 #include <stdint.h>
 #include <stdio.h>
 #define ETH_ALEN	6
+#define ETHERTYPE_IP	0x0800
+#define ETHERTYPE_ARP	0x0806
 
 struct ether_header
 {
@@ -43,6 +45,11 @@ int main(int argc, char* argv[])
 		const ether_header *eth = (ether_header *)packet;
 		printf("%u bytes capturned\n", header->caplen);
 		printf("%02X:%02X:%02X:%02X:%02X:%02x\n", eth->src[0], eth->src[1], eth->src[2], eth->src[3],eth->src[4], eth->src[5]);
+		printf("%02X:%02X:%02X:%02X:%02X:%02x\n", eth->dst[0], eth->dst[1], eth->dst[2], eth->dst[3],eth->dst[4], eth->dst[5]);
+		if(eth->ether_type == 1544)
+			printf("ARP\n");
+		if(eth->ether_type == 8)
+			printf("IP\n");
 	}
 
 	pcap_close(handle);
