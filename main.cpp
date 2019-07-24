@@ -106,6 +106,32 @@ struct tcp_header
 	};
 };
 
+struct udp_header
+{
+#ifndef	_UDP_HEADER
+	uint16_t src;
+	uint16_t dst;
+	uint16_t len;
+	uint16_t check;
+
+#define	UDP_CORK	1
+#define	UDP_UNCAP	100
+#define	UDP_NO_CHECK6_TX	101
+#define	UDP_NO_CHECK6_RX	102
+#define UDP_SEGMENT	103
+#define	GRO	104
+#define UDP_ENCAP_ESPINUDP_NON_IKE	1
+#define UDP_ENCAP_ESPINUDP	2
+#define UDP_ENCAP_L2PINUDP	3
+#define UDP_ENCAP_GTP0	4
+#define	UDP_ENCAP_GTP1U	5
+#define UDP_ENCAP_RXRPC	6
+
+#endif
+};
+
+
+
 struct ether_header
 {
 	uint8_t dst[ETH_ALEN];
@@ -143,21 +169,28 @@ int main(int argc, char* argv[])
 		int res = pcap_next_ex(handle, &header, &packet);
 		if (res == 0) continue;
 		if (res == -1 || res == -2) break;
+		
 		const ether_header *eth = (ether_header *)packet;
 		const ip_header *ip = (ip_header *)(packet + sizeof(ether_header));
 		const tcp_header *tcp = (tcp_header *)(packet + sizeof(ether_header)+sizeof(ip_header));
+		const udp_header *udp = (udp_header *)(packet + sizeof(ether_header)+sizeof(ip_header));
+
 		u_char* data = (u_char *)(packet + sizeof(ether_header) + ip->ip_hl + tcp->th_off);
 		uint32_t tcp_size = (ntohs(ip->ip_len) - ((ip->ip_hl + tcp->th_off) * 4));
-		printf("%u bytes capturned\n", header->caplen);
+
+		printf("%u byte captured\n", header->caplen);
 		printf("%02X:%02X:%02X:%02X:%02X:%02x\n", eth->src[0], eth->src[1], eth->src[2], eth->src[3],eth->src[4], eth->src[5]);
 		printf("%02X:%02X:%02X:%02X:%02X:%02x\n", eth->dst[0], eth->dst[1], eth->dst[2], eth->dst[3],eth->dst[4], eth->dst[5]);
+	
 		if(ntohs(eth->ether_type) == 0x0806)
 			printf("ARP type\n");
-		if(ntohs(eth->ether_type) == 0x0800) {
+		if(ntohs(eth->ether_type) == 0x0800) 
+		{
 			printf("IP type\n");
 			printf("IP src: %d.%d.%d.%d\n",ip->ip_src.a, ip->ip_src.b, ip->ip_src.c, ip->ip_src.d);
 			printf("IP dst: %d.%d.%d.%d\n",ip->ip_dst.a, ip->ip_dst.b, ip->ip_dst.c, ip->ip_dst.d);
 		}
+
 		if(ip->ip_p == 6)
 		{
 			printf("TCP src port: %d\n", ntohs(tcp->source));
@@ -172,6 +205,12 @@ int main(int argc, char* argv[])
 			printf("\n");
 		}
 
+		if(ip->ip_p == 17)
+		{
+			printf("UDP src port: %d\n", ntohs(udp->src));
+			printf("UDP dst port: %d\n", ntohs(udp->dst));
+		}
+					
 		
 	}
 
